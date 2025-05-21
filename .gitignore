@@ -1,0 +1,34 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Editor/IDE settings
+.vscode/
+.idea/
+
+# History files
+.history
+*.log
+*.sqlite3
+*.db
+
+# MacOS system files
+.DS_Store
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python coverage reports
+.coverage
+htmlcov/
+
+# pytest cache
+.pytest_cache/

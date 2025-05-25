@@ -45,17 +45,21 @@ Crea e attiva un ambiente virtuale:
 
 
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate 
+# Windows: venv\Scripts\activate
 Installa le dipendenze:
 
 
 pip install -r requirements.txt
 Configura eventuali variabili d'ambiente (se necessarie), ad esempio per la chiave API o endpoint personalizzati.
 
-Uso
+Uso:
+📥 Precaricamento da cartella data/
+Puoi pre-indicizzare immagini presenti in data/ eseguendo:
+
+python scripts/preload.py
+
 Avvia l'app:
-
-
 streamlit run app.py
 Carica un’immagine.
 
@@ -73,6 +77,23 @@ models/blip_model.py: codice per estrazione descrizione immagine con BLIP.
 models/vector_store.py: gestione FAISS (indicizzazione e ricerca).
 
 models/gpt_model.py: chiamata API modello LLM per risposta in streaming.
+
+✅ Test automatici sui dati
+
+set PYTHONPATH=. && pytest    
+#Windows
+
+PYTHONPATH=. pytest           
+# macOS/Linux
+
+il comando avvia i tests:
+collected 3 items
+
+tests\test_blip_model.py .                                                                                       [ %]
+tests\test_gpt_model.py .                                                                                        [ %]
+tests\test_vector_store.py .
+
+e permette di testare se ci sono errors o warnings
 
 Note
 Il modello LLM (es. llama2) deve essere esposto in locale su http://localhost:11434.

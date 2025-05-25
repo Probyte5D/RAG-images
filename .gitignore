@@ -32,3 +32,11 @@ htmlcov/
 
 # pytest cache
 .pytest_cache/
+
+# Dati e cache FAISS e documenti
+data/
+faiss_index.index
+documents.pkl
+
+# Cartella config Streamlit
+.streamlit/

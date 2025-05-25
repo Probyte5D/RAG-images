@@ -1,23 +1,38 @@
 # Rag Images
 
-Rag Images è un'applicazione che utilizza l'API OpenAI per analizzare immagini caricate e rispondere a domande basate sul contenuto visivo. L’interfaccia è realizzata con Streamlit per un uso semplice e interattivo.
+Rag Images è un'applicazione che sfrutta tecniche di Retrieval-Augmented Generation (RAG) per analizzare immagini caricate, estrarre una descrizione testuale tramite BLIP, indicizzare testi con FAISS, e rispondere a domande relative all'immagine usando un modello LLM (es. llama2).
+
+
+---
+
+## Anteprima
+
+![Project Demo GIF](images/gif.gif)
+
+---
 
 ## Funzionalità
 
-- Caricamento di immagini e analisi dei dettagli.
-- Risposte a domande relative alle immagini tramite il modello GPT-3.5-turbo.
-- Gestione degli errori legati alla quota API e chiave invalida.
-- Supporto per un ambiente di sviluppo semplice e configurabile.
+- Caricamento di immagini e generazione automatica di descrizioni con il modello BLIP.
+- Indicizzazione e ricerca di descrizioni testuali tramite FAISS per ottimizzare il contesto.
+- Risposta a domande sull'immagine usando un modello LLM (es. llama2) tramite API locale.
+- Supporto multilingua per domande e risposte.
+- Interfaccia interattiva e semplice con Streamlit.
+
+---
 
 ## Requisiti
 
 - Python 3.8 o superiore
-- openai
 - streamlit
-- python-dotenv
 - pillow
-- llama-index
-- qdrant-client
+- faiss-cpu
+- sentence-transformers
+- transformers
+- torch
+- requests
+
+---
 
 ## Installazione
 
@@ -30,25 +45,44 @@ Crea e attiva un ambiente virtuale:
 
 
 python -m venv venv
-source venv/bin/activate    # su Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 Installa le dipendenze:
 
 
 pip install -r requirements.txt
-Configura la tua chiave API OpenAI nel file .env:
+Configura eventuali variabili d'ambiente (se necessarie), ad esempio per la chiave API o endpoint personalizzati.
 
-
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Uso
-Per avviare l'app:
+Avvia l'app:
+
 
 streamlit run app.py
-Una volta aperta l’interfaccia, puoi caricare un’immagine e porre domande come "quante foglie?" o qualsiasi altra cosa inerente all’immagine.
+Carica un’immagine.
 
-Note Importanti
-Assicurati che la tua chiave API sia valida e che il tuo account OpenAI abbia credito disponibile.
+L’app genera automaticamente una descrizione.
 
-In caso di superamento della quota, l’app mostrerà un messaggio di errore.
+Puoi porre domande sull’immagine e ricevere risposte basate sul contesto estratto e indicizzato.
 
-Per qualsiasi problema legato all’API, verifica la configurazione del file .env e le impostazioni di rete.
+Le risposte sono generate tramite modello LLM in streaming.
+
+Struttura progetto
+app.py: Streamlit UI e flusso principale.
+
+models/blip_model.py: codice per estrazione descrizione immagine con BLIP.
+
+models/vector_store.py: gestione FAISS (indicizzazione e ricerca).
+
+models/gpt_model.py: chiamata API modello LLM per risposta in streaming.
+
+Note
+Il modello LLM (es. llama2) deve essere esposto in locale su http://localhost:11434.
+
+FAISS mantiene un indice persistente in faiss_index.index e testi in documents.pkl.
+
+Per multilingua, il prompt del sistema può essere adattato nel codice generate_response_stream.
+
+Ottimizza il dataset pre-caricando testi descrittivi rilevanti per migliorare le risposte.
+
+Licenza
+Questo progetto è rilasciato sotto licenza MIT.
 

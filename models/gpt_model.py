@@ -1,36 +1,52 @@
-import os
-import openai
-from dotenv import load_dotenv
+import requests
+import json  # Import necessario per il parsing sicuro
 
-load_dotenv()
+def generate_response_stream(context: list[str], question: str, model="llama2", lang="it", max_tokens=150):
+    url = "http://localhost:11434/v1/chat/completions"
+    headers = {"Content-Type": "application/json"}
 
-api_key = os.getenv("OPENAI_API_KEY")
-print("Chiave API caricata:", api_key)
+    lang_prompts = {
+        "it": (
+            "Rispondi basandoti principalmente sul primo contesto, "
+            "che è la descrizione dell'immagine caricata. "
+            "Gli altri contesti sono informazioni di supporto."
+        ),
+        "en": (
+            "Answer mainly based on the first context, "
+            "which is the description of the uploaded image. "
+            "Other contexts are supporting information."
+        ),
+        # aggiungi altre lingue qui se vuoi
+    }
 
-openai.api_key = api_key  # <-- Importantissimo! 
+    system_prompt = lang_prompts.get(lang, lang_prompts["it"])
 
-def generate_response(context: list[str], question: str, max_tokens=150) -> str:
-    messages = [
-        {"role": "system", "content": "Sei un assistente che risponde usando il contesto fornito."},
-        {"role": "user", "content": f"Contesto: {context}\nDomanda: {question}"}
-    ]
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Context: {context}\nQuestion: {question}"}
+        ],
+        "stream": True,
+        "max_tokens": max_tokens
+    }
 
     try:
-        completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=max_tokens
-        )
-        return completion.choices[0].message.content.strip()
-
+        response = requests.post(url, json=payload, headers=headers, stream=True)
+        for line in response.iter_lines():
+            if line:
+                line_data = line.decode('utf-8').replace("data: ", "")
+                if line_data.strip() == "[DONE]":
+                    break
+                try:
+                    data = json.loads(line_data)
+                    if "choices" in data and len(data["choices"]) > 0:
+                        content = data["choices"][0].get("delta", {}).get("content", "")
+                        if content:
+                            yield content
+                    else:
+                        yield f"[Error: response missing 'choices' -> {data}]"
+                except Exception as err:
+                    yield f"[Parsing error: {err}]"
     except Exception as e:
-        if "RateLimitError" in str(type(e)):
-            return "Errore: Quota API superata. Attendi o aggiorna il tuo piano OpenAI."
-        else:
-            return f"Errore generico: {e}"
-
-if __name__ == "__main__":
-    test_context = ["Questa è una descrizione di esempio."]
-    test_question = "Qual è la descrizione?"
-    risposta = generate_response(test_context, test_question)
-    print("Risposta generata:", risposta)
+        yield f"[Error: {e}]"

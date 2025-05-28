@@ -1,7 +1,5 @@
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
-from dotenv import load_dotenv
-import torch
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")

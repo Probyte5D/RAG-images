@@ -1,8 +1,8 @@
 import requests
 import json
 
-def generate_response_stream(context: list[str], question: str, model="llama2", lang="it", max_tokens=300):
-    url = "http://localhost:11434/v1/chat/completions"
+def generate_response_stream(context: list[str], question: str, model="llama3.2:1b", lang="it", max_tokens=300):
+    url = "http://localhost:11434/api/generate"
     headers = {"Content-Type": "application/json"}
 
     lang_prompts = {
@@ -30,32 +30,34 @@ def generate_response_stream(context: list[str], question: str, model="llama2", 
 
     system_prompt = lang_prompts.get(lang, lang_prompts["it"])
     context_str = "\n---\n".join(context)
+    print("=== CONTEXT PASSED TO GPT ===")
+    print(context)
+    print("============================")
+
+    prompt = f"{system_prompt}\n\nContext:\n{context_str}\n\nQuestion: {question}"
 
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Context:\n{context_str}\n\nQuestion: {question}"}
-        ],
-        "stream": True,
-        "max_tokens": max_tokens
+        "prompt": prompt,
+        "max_tokens": max_tokens,
+        "stream": True
     }
 
     try:
         response = requests.post(url, json=payload, headers=headers, stream=True)
         for line in response.iter_lines():
             if line:
-                line_data = line.decode('utf-8').replace("data: ", "")
-                if line_data.strip() == "[DONE]":
+                line_data = line.decode('utf-8').strip()
+                if line_data == "[DONE]":
                     break
                 try:
                     data = json.loads(line_data)
-                    if "choices" in data and len(data["choices"]) > 0:
-                        content = data["choices"][0].get("delta", {}).get("content", "")
-                        if content:
-                            yield content
+                    if "response" in data:
+                        yield data["response"]
+                        if data.get("done", False):
+                            break
                     else:
-                        yield f"[Error: response missing 'choices' -> {data}]"
+                        yield f"[Warning: chunk senza 'response' -> {data}]"
                 except Exception as err:
                     yield f"[Parsing error: {err}]"
     except Exception as e:

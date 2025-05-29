@@ -26,7 +26,6 @@ def generate_response_stream(context: list[str], question: str, model="llama2", 
             "Clearly state if any object is partially visible or unclear. "
             "Use clear, precise, and concise language."
         ),
-        # aggiungi altre lingue se vuoi
     }
 
     system_prompt = lang_prompts.get(lang, lang_prompts["it"])

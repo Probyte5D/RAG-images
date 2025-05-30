@@ -1,3 +1,12 @@
+import os
+import torch
+
+# Fix temporaneo per errore RuntimeError su torch.classes.__path__
+try:
+    torch.classes.__path__ = [os.path.join(torch.__path__[0], torch.classes.__file__)]
+except Exception:
+    torch.classes.__path__ = []
+
 import nest_asyncio
 nest_asyncio.apply()
 

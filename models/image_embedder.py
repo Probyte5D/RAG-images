@@ -5,8 +5,10 @@ from tqdm import tqdm
 from torchvision import transforms
 from transformers import CLIPProcessor, CLIPModel
 import torch
+from torchvision.transforms import Compose, Resize, ToTensor, Normalize
+import numpy as np
 
-import numpy as np  
+ 
 class ImageEmbedder:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,7 +34,7 @@ def process_amazon_folder(image_folder, image_embedder, collection, batch_size=8
     for i in range(0, len(image_paths), batch_size):
         batch_paths = image_paths[i:i+batch_size]
         images = []
-
+        
         for img_path in batch_paths:
             try:
                 img = Image.open(img_path).convert("RGB")
@@ -45,10 +47,48 @@ def process_amazon_folder(image_folder, image_embedder, collection, batch_size=8
         valid_images = [img for img in images if img is not None]
         embeddings = image_embedder.encode_image(valid_images)
 
+        # Calcolo tutti gli image_id del batch
+        batch_image_ids = []
+        for img_path in batch_paths:
+            try:
+                with open(img_path, "rb") as f:
+                    image_bytes = f.read()
+                image_id = get_image_id(image_bytes)
+                batch_image_ids.append(image_id)
+            except Exception as e:
+                print(f"Error reading {img_path} for image_id: {e}")
+                batch_image_ids.append(None)
+
+        # Funzione per query batch esistenti
+        def get_existing_image_ids(collection, image_ids):
+            # Rimuovo eventuali None dalla lista per evitare errori in query
+            filtered_ids = [id_ for id_ in image_ids if id_ is not None]
+            if not filtered_ids:
+                return set()
+            # Attenzione a formattare bene la lista nel filtro
+            expr = f'image_id in {filtered_ids}'
+            try:
+                results = collection.query(expr=expr, output_fields=["image_id"])
+                return set(r["image_id"] for r in results)
+            except Exception as e:
+                print(f"Batch query failed: {e}")
+                return set()
+
+        existing_ids = get_existing_image_ids(collection, batch_image_ids)
+
         emb_idx = 0
         for idx, img in enumerate(images):
             if img is None:
                 print(f"Skipping image at batch index {idx} due to loading error")
+                continue
+
+            image_id = batch_image_ids[idx]
+            if image_id is None:
+                print(f"Skipping image at batch index {idx} due to missing image_id")
+                continue
+
+            if image_id in existing_ids:
+                print(f"⚠️ Dato già esistente per image_id={image_id}")
                 continue
 
             image_emb = embeddings[emb_idx]
@@ -58,18 +98,12 @@ def process_amazon_folder(image_folder, image_embedder, collection, batch_size=8
                 print(f"Skipping image at batch index {idx}, embedding failed.")
                 continue
 
-            # Converti embedding in numpy array float32 (qui solo UNA volta)
+            # Converti embedding in numpy array float32 (una volta sola)
             image_emb = np.array(image_emb, dtype=np.float32)
 
-            img_path = batch_paths[idx]
             text = "Amazon product image"
-
             text_emb = get_embedding(text)
             text_emb = np.array(text_emb, dtype=np.float32)
-
-            with open(img_path, "rb") as f:
-                image_bytes = f.read()
-            image_id = get_image_id(image_bytes)
 
             insert_to_milvus(collection, text_emb, image_emb, text, image_id)
 

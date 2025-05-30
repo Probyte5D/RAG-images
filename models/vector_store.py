@@ -1,6 +1,7 @@
 from pymilvus import connections, Collection, utility, FieldSchema, CollectionSchema, DataType
 from sentence_transformers import SentenceTransformer
 import hashlib
+import numpy as np
 
 # Connessione Milvus + setup collection
 def init_milvus_collection(name="rag_image_texts"):
@@ -62,6 +63,25 @@ def insert_to_milvus(collection, text_embedding, image_embedding, text, image_id
         exists = False
 
     if not exists:
+        # Assicurati che text_embedding e image_embedding siano liste di vettori (batch size 1)
+        if not isinstance(text_embedding, (list, np.ndarray)):
+            text_embedding = [text_embedding]
+        if not isinstance(image_embedding, (list, np.ndarray)):
+            image_embedding = [image_embedding]
+
+        # Converti in lista di liste (float)
+        if isinstance(text_embedding, np.ndarray):
+            text_embedding = text_embedding.tolist()
+        if isinstance(image_embedding, np.ndarray):
+            image_embedding = image_embedding.tolist()
+
+        # Se per errore è una singola lista dentro una lista (es: [[...]]), fai un flatten
+        if len(text_embedding) > 0 and isinstance(text_embedding[0], list) and len(text_embedding) == 1:
+            text_embedding = text_embedding[0]
+        if len(image_embedding) > 0 and isinstance(image_embedding[0], list) and len(image_embedding) == 1:
+            image_embedding = image_embedding[0]
+
+        # Ora inserisci con batch=1
         collection.insert([
             [text_embedding],
             [image_embedding],
@@ -72,6 +92,7 @@ def insert_to_milvus(collection, text_embedding, image_embedding, text, image_id
         print(f"✅ Inserito nuovo dato per image_id={image_id}")
     else:
         print(f"⚠️ Dato già esistente per image_id={image_id}")
+
 
 
 def search_similar(collection, query_embedding, anns_field="text_embedding", exclude_image_id=None, top_k=5, threshold=0.6):

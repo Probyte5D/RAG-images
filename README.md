@@ -1,6 +1,6 @@
-# Rag Images
+##  🖼️RAG Multimodale
 
-Rag Images è un'applicazione che sfrutta tecniche di Retrieval-Augmented Generation (RAG) per analizzare immagini caricate, estrarre una descrizione testuale tramite BLIP, indicizzare testi con FAISS, e rispondere a domande relative all'immagine usando un modello LLM (es. llama2).
+RAG Images è un'applicazione che utilizza tecniche di Retrieval-Augmented Generation (RAG) per analizzare immagini, generare descrizioni automatiche e rispondere a domande in linguaggio naturale. Combina il modello BLIP per la generazione di caption, Milvus o FAISS per la ricerca vettoriale e un LLM locale (es. LLaMA 2) per la generazione delle risposte.
 
 
 ---
@@ -11,26 +11,33 @@ Rag Images è un'applicazione che sfrutta tecniche di Retrieval-Augmented Genera
 
 ---
 
-## Funzionalità
+## 🚀Funzionalità
+📷 Caricamento immagini con descrizione automatica tramite BLIP
 
-- Caricamento di immagini e generazione automatica di descrizioni con il modello BLIP.
-- Indicizzazione e ricerca di descrizioni testuali tramite FAISS per ottimizzare il contesto.
-- Risposta a domande sull'immagine usando un modello LLM (es. llama2) tramite API locale.
-- Supporto multilingua per domande e risposte.
-- Interfaccia interattiva e semplice con Streamlit.
+🔎 Indicizzazione embedding in Milvus
+
+💬 Domande in linguaggio naturale con risposte generate da un LLM via Ollama
+
+🗂️ Precaricamento automatico di immagini da una cartella (images_folder/images)
+
+🌍 Supporto multilingua (prompt personalizzabile).
+
+⚡ Interfaccia web semplice e interattiva (Streamlit).
+
+🧪 Test automatici su componenti chiave.
 
 ---
 
-## Requisiti
+## 📦 Requisiti
+Python ≥ 3.8
 
-- Python 3.8 o superiore
-- streamlit
-- pillow
-- faiss-cpu
-- sentence-transformers
-- transformers
-- torch
-- requests
+streamlit, pillow, torch, transformers, sentence-transformers
+
+faiss-cpu oppure pymilvus se usi Milvus
+
+requests, pytest
+
+
 
 ---
 
@@ -39,71 +46,133 @@ Rag Images è un'applicazione che sfrutta tecniche di Retrieval-Augmented Genera
 1. Clona il repository:
 
 ```bash
+1. Clona il repository
+
 git clone https://github.com/tuo-username/rag-images.git
 cd rag-images
-Crea e attiva un ambiente virtuale:
-
+2. Crea un ambiente virtuale
+Windows:
 
 python -m venv venv
-source venv/bin/activate 
-# Windows: venv\Scripts\activate
-Installa le dipendenze:
+.\venv\Scripts\activate
+macOS/Linux:
 
+python -m venv venv
+source venv/bin/activate
+3. Installa le dipendenze
 
 pip install -r requirements.txt
-Configura eventuali variabili d'ambiente (se necessarie), ad esempio per la chiave API o endpoint personalizzati.
+(Opzionale) Configura eventuali variabili d'ambiente (es. API key, endpoint personalizzati)
+```
 
-Uso:
-📥 Precaricamento da cartella data/
-Puoi pre-indicizzare immagini presenti in data/ eseguendo:
 
-python scripts/preload.py
+```bash
+⚙️ Avvio dei Servizi
+🧠 Avvia Milvus con Docker
+Metodo 1 - Docker Compose:
+
+docker-compose -f docker/milvus.yaml up -d
+Metodo 2 - Docker singolo comando:
+
+docker run -d --name milvus-standalone -p 19530:19530 -p 19121:19121 milvusdb/milvus:latest
+
+
+Controlla che Milvus sia attivo:
+
+docker ps
+Dovresti vedere milvus-standalone in esecuzione.
+
+Per fermare Milvus:
+
+docker stop milvus-standalone
+Per rimuoverlo completamente:
+
+docker rm milvus-standalone
+
+🧠 Avvia Ollama
+Vai su https://ollama.com/ e installalo per il tuo sistema operativo.
+
+Apri il terminale ed esegui:
+
+ollama serve
+In un altro terminale, scarica il modello desiderato (es. LLaMA 2):
+
+ollama pull llama2:7b
+Oppure usa una versione specifica, adatta alla tua GPU.
+
+Avvia il modello:
+
+ollama run llama2
+
+ps: io ho utilizzato il model="llama3.2:1b perchè più adatto alla GPU
+OLLAMA: here the documentation https://github.com/ollama/ollama)
+
+Vai sul sito di https://ollama.com/
+fai download per utilizzarlo localmente
+
+Ollama ha una REST API per far partire e testare i modelli:
+http://localhost:11434/api/generate
+
 
 Avvia l'app:
 streamlit run app.py
-Carica un’immagine.
 
-L’app genera automaticamente una descrizione.
+oppure Se usi Windows, a volte conviene lanciare Streamlit così:
 
-Puoi porre domande sull’immagine e ricevere risposte basate sul contesto estratto e indicizzato.
+python -m streamlit run app.py
 
-Le risposte sono generate tramite modello LLM in streaming.
 
-Struttura progetto
-app.py: Streamlit UI e flusso principale.
+```
 
-models/blip_model.py: codice per estrazione descrizione immagine con BLIP.
+## 🔄 Workflow
+Precaricamento immagini
 
-models/vector_store.py: gestione FAISS (indicizzazione e ricerca).
+Un pulsante nella UI consente di caricare tutte le immagini dalla cartella images_folder/images
 
-models/gpt_model.py: chiamata API modello LLM per risposta in streaming.
+Ogni immagine viene descritta e indicizzata in Milvus automaticamente
 
-✅ Test automatici sui dati
+Caricamento dinamico
 
-set PYTHONPATH=. && pytest    
-#Windows
+Puoi anche caricare immagini singole tramite il form nella UI
 
-PYTHONPATH=. pytest           
-# macOS/Linux
+La descrizione viene generata in automatico
 
-il comando avvia i tests:
-collected 3 items
+Gli embeddings vengono calcolati e salvati in Milvus
 
-tests\test_blip_model.py .                                                                                       [ %]
-tests\test_gpt_model.py .                                                                                        [ %]
-tests\test_vector_store.py .
+Domande e risposte
 
-e permette di testare se ci sono errors o warnings
+Poni una domanda sull'immagine
 
-Note
-Il modello LLM (es. llama2) deve essere esposto in locale su http://localhost:11434.
+Il sistema recupera i segmenti più rilevanti
 
-FAISS mantiene un indice persistente in faiss_index.index e testi in documents.pkl.
+Il modello LLM genera una risposta coerente e basata sul contesto visivo
 
-Per multilingua, il prompt del sistema può essere adattato nel codice generate_response_stream.
+## 🧩 Struttura del Progetto
 
-Ottimizza il dataset pre-caricando testi descrittivi rilevanti per migliorare le risposte.
+rag-images/
+├── app.py                        # UI Streamlit e flusso principale
+├── models/
+│   ├── blip_model.py             # Estrazione descrizione da immagine
+│   ├── vector_store.py           # Gestione Milvus (embedding e retrieval)
+│   ├── gpt_model.py              # Streaming risposte da LLM via Ollama
+│   ├── utils.py                  # Funzioni di supporto generiche
+│   └── image_embedder.py         # Estrazione degli embeddings dalle immagini
+├── images_folder/
+│   └── images/                   # Cartella per precaricamento immagini
+├── docker/
+│   └── milvus.yaml               # (opzionale) Configurazione Docker Compose
+├── requirements.txt
+└── README.md
 
-Licenza
-Questo progetto è rilasciato sotto licenza MIT.
+## 🧪 Test automatici 
+Quando saranno attivi:
 
+Windows:
+
+
+set PYTHONPATH=. && pytest
+macOS/Linux:
+PYTHONPATH=. pytest
+
+per uno specifico ad esempio:
+set PYTHONPATH=. && pytest tests/test_gpt_model.py

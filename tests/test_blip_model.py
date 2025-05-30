@@ -1,10 +1,15 @@
-# tests/test_blip_model.py
-
+import pytest
 from PIL import Image
-from models.blip_model import extract_image_details
+from models.blip_model import extract_caption
 
-def test_extract_image_details():
-    image = Image.new("RGB", (100, 100), color="red")  # dummy image
-    result = extract_image_details(image)
-    assert isinstance(result, str)
-    assert len(result) > 0
+@pytest.mark.slow
+def test_extract_caption_returns_text():
+    # Crea immagine dummy rossa (valida per test)
+    test_img = Image.new("RGB", (224, 224), color="red")
+    
+    # Esegue la funzione
+    caption = extract_caption(test_img)
+    
+    # Verifica che restituisca una stringa non vuota
+    assert isinstance(caption, str)
+    assert len(caption.strip()) > 0
